@@ -1,10 +1,29 @@
+# ============================================================================
+# Sets up environment variables
+# ============================================================================
+from dotenv import load_dotenv
+
+load_dotenv(dotenv_path=".env", override=True)
+load_dotenv(dotenv_path="../.env", override=True)
+
+# ============================================================================
+# Set up system Path
+# ============================================================================
+import sys
+import os
+
+sys.path.extend({*os.environ["PYTHONPATH"].split(":")} - set(sys.path))
+
+# ============================================================================
+# Begin configuration
+# ============================================================================
+
 import shutil
 import pytest
-import os
 import datasets
 import ray
-from typing import Dict
 from tests.tsettings import *
+from typing import Dict
 from utils.IO import *
 from datasets.readers import ExtractedSetReader, ProcessedSetReader
 from settings import *
