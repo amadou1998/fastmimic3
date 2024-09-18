@@ -313,6 +313,9 @@ class DictionaryProperty(object):
         instance._write({self._name: value})
 
 
+import sqlitedict
+
+
 def storable(cls):
     """
     A class decorator that adds persistence functionality to a class.
@@ -362,7 +365,7 @@ def storable(cls):
         self._access_count = 0
 
         # Load or initialize progress
-        if Path(self._path.parent, f"{self._path.name}.dat").is_file():
+        if Path(self._path.parent, f"{self._path.name}").is_file():
             self._progress = self._read()
             self._wrap_attributes()
         else:
@@ -378,10 +381,10 @@ def storable(cls):
         Args:
             items (dict): The dictionary containing the progress items.
         """
-        if self._lock is not None:
-            self._lock.acquire()
         self._access_count += 1
-        with shelve.open(str(self._path)) as db:
+
+        # Open the SQLiteDict with autocommit=False for better control
+        with sqlitedict.SqliteDict(str(self._path), autocommit=False) as db:
             for key, value in items.items():
                 # Make sure no Property types are written back
                 if isinstance(value, ProxyDictionary):
@@ -390,8 +393,7 @@ def storable(cls):
                     db[key] = list(value)
                 else:
                     db[key] = value
-        if self._lock is not None:
-            self._lock.release()
+            db.commit()  # Commit the changes
 
     def _read(self, key=None):
         """
@@ -400,15 +402,12 @@ def storable(cls):
         Returns:
             dict: The progress dictionary.
         """
-        if self._lock is not None:
-            self._lock.acquire()
-
-        with shelve.open(str(self._path)) as db:
+        with sqlitedict.SqliteDict(str(self._path), autocommit=True) as db:
 
             def _read_value(key):
                 value = db[key]
                 default_value = cls._originals.get(key, None)
-                # These types are miscast by shelve
+                # These types are miscast by shelve/sqlitedict
                 if isinstance(default_value, bool):
                     return bool(value)
                 elif isinstance(default_value, int):
@@ -422,9 +421,6 @@ def storable(cls):
                     ret[key] = _read_value(key)
             else:
                 ret = _read_value(key)
-
-        if self._lock is not None:
-            self._lock.release()
 
         return ret
 

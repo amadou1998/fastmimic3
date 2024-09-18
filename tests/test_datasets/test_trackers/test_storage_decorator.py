@@ -43,7 +43,7 @@ def test_storable_basics():
     # Test the storage path
     test_instance = TestClass(Path(TEMP_DIR, "progress"))
 
-    assert Path(TEMP_DIR, "progress.dat").is_file()
+    assert Path(TEMP_DIR, "progress").is_file()
 
     # Test assignment
     test_instance.num_samples = 10
